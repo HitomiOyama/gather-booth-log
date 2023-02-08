@@ -6,6 +6,7 @@ globalThis.WebSocket = require("isomorphic-ws");
 const game = new Game(undefined, () => Promise.resolve({apiKey: API_KEY}));
 game.init(SPACE_ID);
 game.connect();
+console.log('test');
 
 game.subscribeToConnection(
     (connected) => {
