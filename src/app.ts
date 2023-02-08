@@ -7,6 +7,7 @@ const game = new Game(undefined, () => Promise.resolve({apiKey: API_KEY}));
 game.init(SPACE_ID);
 game.connect();
 console.log('test');
+console.log("world");
 
 game.subscribeToConnection(
     (connected) => {
