@@ -7,7 +7,7 @@ const game = new Game(undefined, () => Promise.resolve({apiKey: API_KEY}));
 game.init(SPACE_ID);
 game.connect();
 console.log('test');
-console.log("world");
+console.log("hello world");
 
 game.subscribeToConnection(
     (connected) => {
@@ -29,6 +29,14 @@ game.subscribeToEvent('playerMoves', () => {
 
     const playersPosInfo:{[id: string]: string} = {}
 
+    var now = new Date()
+    var year = now.getFullYear()
+    var month = now.getMonth()+1
+    var date = now.getDate()
+    var hour = now.getHours()
+    var min = now.getMinutes()
+    var sec = now.getSeconds()
+
     for(const playerId of playerIds) {
         const player = game.players[playerId]
         if(player.x >= 53 && player.x <=58 && player.y >=17 && player.y <=23) {
@@ -42,18 +50,21 @@ game.subscribeToEvent('playerMoves', () => {
            playersPosInfo[playerId] = "roomXEntrance"
 
            console.log(playersPosInfo)
+           console.log(year + "年" + month + "月" + date + "日" + hour + ":" + min + ":" + sec)
 
         // 入室
         } else if(conditions1 && player.y === 23) {
             playersPosInfo[playerId] = "inRoomX"
 
             console.log(playersPosInfo)
+            console.log(year + "年" + month + "月" + date + "日" + hour + ":" + min + ":" + sec)
 
         // 退室
         } else if (conditions1 && player.y === 25) {
             playersPosInfo[playerId] = "outside"
 
             console.log(playersPosInfo)
+            console.log(year + "年" + month + "月" + date + "日" + hour + ":" + min + ":" + sec)
         }
     }
 
