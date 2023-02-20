@@ -8,8 +8,7 @@ const game = new Game(undefined, () => Promise.resolve({apiKey: API_KEY}));
 game.init(SPACE_ID);
 game.connect();
 
-const playerIds = Object.keys(game.players)
-console.log("playerIds are " + Object.keys(game.players))
+
 
 const playersPosInfo:{[id: string]: string} = {}
 let spreadService: GoogleSpreadsheetService;
@@ -24,10 +23,22 @@ game.subscribeToConnection(
         game.subscribeToEvent("warn", console.warn);
         game.subscribeToEvent("error", console.error);
 
+        console.log("partialmap1 " + JSON.stringify(game.partialMaps))
+        console.dir(game.partialMaps)
+        console.dir(game.partialMaps, {depth: null})
+
         // スプレッドシート書き込みを行うインスタンスの生成
         spreadService = await GoogleSpreadsheetService.getInstance();
     }   
 )
+
+game.subscribeToEvent('playerJoins', () => {
+    // console.log("playerIds are " + Object.keys(game.players))
+
+   
+
+    
+})
 
 /**
  * プレイヤーの移動を検知して入退室を記録する
@@ -36,8 +47,12 @@ game.subscribeToEvent('playerMoves', () => {
     const playerIds = Object.keys(game.players)
     
     for(const playerId of playerIds) {
-        const player = game.players[playerId] 
-        console.log("x:" + player.x + " y:" + player.y)
+        const player = game.players[playerId]
+        if(player.name === "Hitomi OYAMA") {
+            console.log("x:" + player.x + " y:" + player.y)
+            console.log("map is " + player.map)
+        }
+       
 
         const room1AreaX = generateCoordinate(53, 58, player.x)
         const room1AreaY = generateCoordinate(17, 23, player.y)
