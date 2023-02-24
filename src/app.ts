@@ -3,7 +3,7 @@ import {SPACE_ID, API_KEY } from "./config";
 import {GoogleSpreadsheetService} from "./googleSpreadSheet"
 import {rooms} from "./rooms"
 import { PlayerPosInfo } from "./type";
-import {detectInOutOfRoom, generateCoordinates} from './recordEntranceExit'
+import {detectInOutOfRoom, generateCoordinates, writeIntoSpreadSheet} from './recordEntranceExit'
 
 globalThis.WebSocket = require("isomorphic-ws");
 
@@ -50,10 +50,9 @@ game.subscribeToEvent('playerJoins', () => {
 /**
  * プレイヤーの移動を検知して入退室を記録する
  */
-game.subscribeToEvent('playerMoves', () => {
+game.subscribeToEvent('playerMoves', ({ playerMoves }, context) => {
     const playerIds = Object.keys(game.players)
-   
-    
+
     for(const playerId of playerIds) {
         const player = game.players[playerId]
 
@@ -65,23 +64,11 @@ game.subscribeToEvent('playerMoves', () => {
 })
 
 
-// game.subscribeToEvent('playerTriggersItem', (x) => {
-//     const playerIds = Object.keys(game.players)
-//     console.log('key', x)
-
-//     // for(const playerId of playerIds) {
-//     //     const player = game.players[playerId]
-
-//     //     console.log("emote " + player.emote)
-//     // }
-// })
-
-
 //Gets events on X near object
 game.subscribeToEvent("playerInteracts",({ playerInteracts }, context) => {
-    console.log("playerInteracts " + playerInteracts);
-});
+    const uid = game.getPlayerUidFromEncId(playerInteracts.encId)
 
-game.subscribeToEvent("playerTriggersItem", ({ playerTriggersItem }, context) => {
-    console.log("playerTriggersItem " + playerTriggersItem);
+    const player = uid ? game.players[uid] : {name: 'undefined'}
+
+    writeIntoSpreadSheet(player.name, 'pressX', 'room1', false, spreadService);
 });

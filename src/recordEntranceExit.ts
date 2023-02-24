@@ -123,4 +123,4 @@ import { RoomCorners, RoomEntrance, Rooms, RoomCoordinates, PlayerPosInfo } from
 
 // }
 
-export {detectInOutOfRoom, generateCoordinates}
+export {detectInOutOfRoom, generateCoordinates, writeIntoSpreadSheet}
