@@ -29,6 +29,7 @@ export type RoomCoordinates = {
 export type PlayerPosInfo  = {
     id: string, 
     roomName: string, 
-    map: string,
+    mapId: string,
+    mapName: string,
     isIn: boolean
 }

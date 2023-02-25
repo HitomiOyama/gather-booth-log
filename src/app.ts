@@ -1,9 +1,9 @@
-import {Game, Player, SetItemString} from "@gathertown/gather-game-client";
+import {Game, Player, PlayerSetsCurrentArea, SetItemString} from "@gathertown/gather-game-client";
 import {SPACE_ID, API_KEY } from "./config";
 import {GoogleSpreadsheetService} from "./googleSpreadSheet"
 import {rooms} from "./rooms"
-import { PlayerPosInfo } from "./type";
-import {detectInOutOfRoom, generateCoordinates, writeIntoSpreadSheet} from './recordEntranceExit'
+import { PlayerPosInfo, RoomCoordinates } from "./type";
+import {detectInOutOfRoom, generateCoordinates, detectInteract} from './recordEntranceExit'
 
 globalThis.WebSocket = require("isomorphic-ws");
 
@@ -11,7 +11,7 @@ const game = new Game(undefined, () => Promise.resolve({apiKey: API_KEY}));
 game.init(SPACE_ID);
 game.connect();
 
-const playersPosInfo: PlayerPosInfo[] = []
+let playerPositions: PlayerPosInfo[] = []
 let spreadService: GoogleSpreadsheetService;
 
 const playerIds = Object.keys(game.players)
@@ -26,6 +26,8 @@ game.subscribeToConnection(
         game.subscribeToEvent("warn", console.warn);
         game.subscribeToEvent("error", console.error);
 
+        playerPositions = []
+
         // スプレッドシート書き込みを行うインスタンスの生成
         spreadService = await GoogleSpreadsheetService.getInstance();
     }   
@@ -34,41 +36,86 @@ game.subscribeToConnection(
 /**
  * プログラム開始時に全ての室内にいる人を検出しスプレッドシートに記録
  */
-game.subscribeToEvent('playerJoins', () => {
-    for(const playerId of playerIds) {
-        const player = game.players[playerId]
+game.subscribeToEvent('playerJoins', ({ playerJoins }, context) => {
+    const uid = game.getPlayerUidFromEncId(playerJoins.encId)
+    let player: Player;
 
-        playersPosInfo.push({id: playerId, roomName: '', map: player.map, isIn: true })
+    if(uid) {
+        player = game.players[uid]
+        if(!playerPositions.find(playerPosision => playerPosision.id == uid)) {
+            player = game.players[uid]
+            playerPositions.push({
+                id: uid,
+                roomName: 'outside',
+                mapId: player.map,
+                mapName: 'undefined',
+                isIn: false
+            })
+        }
+        const playerPosition = playerPositions.find(playerPosition => playerPosition.id == uid)
 
-        const roomCoordinates = generateCoordinates(rooms, player)
-
-        detectInOutOfRoom(roomCoordinates, playerId, player, playersPosInfo, spreadService)
+        const coordinates = generateCoordinates(rooms, player)
+        if(playerPosition) {
+            detectInOutOfRoom(coordinates, player, playerPosition, spreadService)
+        } 
     }
-    
 })
 
 /**
  * プレイヤーの移動を検知して入退室を記録する
  */
 game.subscribeToEvent('playerMoves', ({ playerMoves }, context) => {
-    const playerIds = Object.keys(game.players)
-
-    for(const playerId of playerIds) {
-        const player = game.players[playerId]
-
-        playersPosInfo.push({id: playerId, roomName: '', map: player.map, isIn: true })
-        const roomCoordinates = generateCoordinates(rooms, player)
-
-        detectInOutOfRoom(roomCoordinates, playerId, player, playersPosInfo, spreadService)
+    let player: Player;
+    
+    const uid = game.getPlayerUidFromEncId(playerMoves.encId)
+    if(uid) {
+        
     }
-})
+    if(uid) {
+        player = game.players[uid]
+
+        if(!playerPositions.find(playerPosision => playerPosision.id == uid)) {
+            player = game.players[uid]
+            playerPositions.push({
+                id: uid,
+                roomName: 'outside',
+                mapId: player.map,
+                mapName: 'undefined',
+                isIn: false
+            })
+        } 
+
+        const playerPosition = playerPositions.find(playerPosition => playerPosition.id == uid)
+
+        const coordinates = generateCoordinates(rooms,player)
+
+        if(playerPosition) {
+            detectInOutOfRoom(coordinates, player, playerPosition, spreadService)
+        }   
+        
+    }
+}) 
+
 
 
 //Gets events on X near object
 game.subscribeToEvent("playerInteracts",({ playerInteracts }, context) => {
     const uid = game.getPlayerUidFromEncId(playerInteracts.encId)
 
-    const player = uid ? game.players[uid] : {name: 'undefined'}
+    // const player = uid ? game.players[uid] : {name: 'undefined'}
 
-    writeIntoSpreadSheet(player.name, 'pressX', 'room1', false, spreadService);
+    // writeIntoSpreadSheet(player.name, 'pressX', 'room1', false, spreadService);
+
+    let player: Player;
+    if(uid) {
+        player = game.players[uid]
+
+        const playerPosition = playerPositions.find(playerPosition => playerPosition.id == uid)
+
+        const coordinates = generateCoordinates(rooms,player)
+
+        if(playerPosition) {
+            detectInteract(coordinates, player, playerPosition, spreadService)
+        }   
+    }
 });
