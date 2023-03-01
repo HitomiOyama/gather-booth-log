@@ -1,7 +1,7 @@
-import {Game, Player, PlayerSetsCurrentArea, SetItemString} from "@gathertown/gather-game-client";
+import {Game, Player} from "@gathertown/gather-game-client";
 import {SPACE_ID, API_KEY } from "./config";
 import {rooms} from "./rooms"
-import { PlayerPosInfo, RoomCoordinates } from "./type";
+import { PlayerPosInfo } from "./type";
 import {detectInOutOfRoom, generateCoordinates, detectInteract} from './recordEntranceExit'
 
 globalThis.WebSocket = require("isomorphic-ws");
