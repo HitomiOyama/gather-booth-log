@@ -1,6 +1,8 @@
 import {Player, PlayerSpotlights} from "@gathertown/gather-game-client";
 import {GoogleSpreadsheetService} from "./googleSpreadSheet"
 import { RoomCorners, RoomEntrance, Rooms, RoomCoordinates, PlayerPosInfo } from "./type";
+import Papa from 'papaparse';
+var fs = require('fs');
 
 /**
  * 入退室の条件文を生成します
@@ -23,21 +25,21 @@ const generateCoordinates = (rooms: Rooms[], player: Player): RoomCoordinates[] 
 
 
 /**
- * 入退室を検知してスプレッドシートに記載します。
+ * 入退室を検知して記載します。
  * @param {RoomCoordinates[]} roomCoordinates 部屋の情報（四隅、入口）
  * @param {string} playerId プレイヤー
  * @param {Player} player プレイヤー
  * @return {void} 
  */
-const detectInOutOfRoom = (roomCoordinates: RoomCoordinates[], player: Player, playerPosition: PlayerPosInfo, spreadService: GoogleSpreadsheetService): void => {
+const detectInOutOfRoom = (roomCoordinates: RoomCoordinates[], player: Player, playerPosition: PlayerPosInfo): void => {
     
     for(const roomCoordinate of roomCoordinates) {
 
         
         // 入室
-        isInRoom( player, roomCoordinate, playerPosition, spreadService)
+        isInRoom( player, roomCoordinate, playerPosition)
         // 退室
-        isAtEntrance( player, roomCoordinate, playerPosition, spreadService)
+        isAtEntrance( player, roomCoordinate, playerPosition)
     }
 }
 
@@ -79,7 +81,7 @@ const generateEntranceCoordinate = (entranceCells:RoomEntrance, mapId: string, p
  * @param {string} roomName 部屋の名前
  * 
  */
-const isInRoom = ( player: Player, roomCoordinates: RoomCoordinates, playerPosition: PlayerPosInfo, spreadService:GoogleSpreadsheetService): void => {
+const isInRoom = ( player: Player, roomCoordinates: RoomCoordinates, playerPosition: PlayerPosInfo): void => {
     
     if( roomCoordinates.isInRoom ) {
         if(playerPosition.roomName !== roomCoordinates.roomName) {
@@ -87,7 +89,7 @@ const isInRoom = ( player: Player, roomCoordinates: RoomCoordinates, playerPosit
             
             playerPosition.isIn = true
             playerPosition.mapId = player.map
-            writeIntoSpreadSheet(player.name, roomCoordinates.mapName, playerPosition.roomName, true,false,  spreadService)
+            writeIntoCSV(player.name, roomCoordinates.mapName, playerPosition.roomName, true,false)
         }
     } 
 }
@@ -99,13 +101,13 @@ const isInRoom = ( player: Player, roomCoordinates: RoomCoordinates, playerPosit
  * @param {string} playerId プレイヤーのID
  * @param {Player} player プレイヤーのID
  */
-const isAtEntrance = ( player: Player, coordinates: RoomCoordinates, playerPosition: PlayerPosInfo, spreadService:GoogleSpreadsheetService): void => {
+const isAtEntrance = ( player: Player, coordinates: RoomCoordinates, playerPosition: PlayerPosInfo): void => {
 
     if (coordinates.isAtEntrance) {
         if(playerPosition.isIn !== false) {
             playerPosition.isIn = false
 
-            writeIntoSpreadSheet(player.name, coordinates.mapName, playerPosition.roomName, false, false, spreadService);
+            writeIntoCSV(player.name, coordinates.mapName, playerPosition.roomName, false, false);
             playerPosition.roomName = 'outside'
         }
     }
@@ -118,41 +120,61 @@ const isAtEntrance = ( player: Player, coordinates: RoomCoordinates, playerPosit
  * @param {string} playerId プレイヤーのID
  * @param {Player} player プレイヤーのID
  */
-const isPressedXButton = ( player: Player, coordinates: RoomCoordinates, playerPosition: PlayerPosInfo, spreadService:GoogleSpreadsheetService): void => {
+const isPressedXButton = ( player: Player, coordinates: RoomCoordinates, playerPosition: PlayerPosInfo): void => {
 
     if( coordinates.isInRoom ) {
         if(playerPosition.roomName == coordinates.roomName) {
             const pressedXBuuton = true
-            writeIntoSpreadSheet(player.name, coordinates.mapName, playerPosition.roomName, true, pressedXBuuton,  spreadService)
+            writeIntoCSV(player.name, coordinates.mapName, playerPosition.roomName, true, pressedXBuuton)
         }
     } 
 }
 
 /**
- * 入退室を検知してスプレッドシートに記載します。
+ * Xボタン押下を検知して記載します。
  * @param {RoomCoordinates[]} roomCoordinates 部屋の情報（四隅、入口）
  * @param {string} playerId プレイヤー
  * @param {Player} player プレイヤー
  * @return {void} 
  */
-const detectInteract = (roomCoordinates: RoomCoordinates[], player: Player, playerPosition: PlayerPosInfo, spreadService: GoogleSpreadsheetService): void => {
+const detectInteract = (roomCoordinates: RoomCoordinates[], player: Player, playerPosition: PlayerPosInfo): void => {
     for(const roomCoordinate of roomCoordinates) {
-        isPressedXButton( player, roomCoordinate, playerPosition, spreadService)
+        isPressedXButton( player, roomCoordinate, playerPosition)
     }
 }
 
 
-/**
- * スプレッドシートへの書き込み
+/**CSVへの書き込み
  * @param {string} name プレイヤー名
  * @param {string} room 部屋名
  */
-const writeIntoSpreadSheet = async (name: string, map: string, room: string, isIn: boolean , pressX: boolean, spreadService: GoogleSpreadsheetService): Promise<void> => {
-    await spreadService.addRow(room, [name, map, room, isIn ? 'in' : 'out', pressX? 'pressX': '', Date()]); 
-    await spreadService.addRow("all", [name, map, room, isIn ? 'in' : 'out', pressX? 'pressX': '', Date()]); 
+const writeIntoCSV = async (name: string, map: string, room: string, isIn: boolean , pressX: boolean, spreadService: GoogleSpreadsheetService): Promise<void> => {
+
+    let csv;
+    if(pressX) {
+        csv = Papa.unparse([[
+            name, 
+            map, 
+            room, 
+            '', 
+            pressX? 'pressX' : '', 
+            Date(),
+        ]])
+    } else {
+        csv = Papa.unparse([[
+            name, 
+            map, 
+            room, 
+            isIn ? 'in' : 'out', 
+            '', 
+            Date(),
+        ]])
+    }
+    const fileName = `${room}.csv`
+    fs.appendFileSync(fileName, `${csv}\r\n`)
 }
 
 
 
 
-export {detectInOutOfRoom, generateCoordinates, writeIntoSpreadSheet, isPressedXButton, detectInteract}
+export {detectInOutOfRoom, generateCoordinates, writeIntoCSV, isPressedXButton, detectInteract}

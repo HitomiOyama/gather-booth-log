@@ -1,6 +1,5 @@
 import {Game, Player, PlayerSetsCurrentArea, SetItemString} from "@gathertown/gather-game-client";
 import {SPACE_ID, API_KEY } from "./config";
-import {GoogleSpreadsheetService} from "./googleSpreadSheet"
 import {rooms} from "./rooms"
 import { PlayerPosInfo, RoomCoordinates } from "./type";
 import {detectInOutOfRoom, generateCoordinates, detectInteract} from './recordEntranceExit'
@@ -12,9 +11,7 @@ game.init(SPACE_ID);
 game.connect();
 
 let playerPositions: PlayerPosInfo[] = []
-let spreadService: GoogleSpreadsheetService;
 
-const playerIds = Object.keys(game.players)
 
 /**
  * Gatherへの接続
@@ -27,14 +24,11 @@ game.subscribeToConnection(
         game.subscribeToEvent("error", console.error);
 
         playerPositions = []
-
-        // スプレッドシート書き込みを行うインスタンスの生成
-        spreadService = await GoogleSpreadsheetService.getInstance();
     }   
 )
 
 /**
- * プログラム開始時に全ての室内にいる人を検出しスプレッドシートに記録
+ * プログラム開始時に全ての室内にいる人を検出し記録
  */
 game.subscribeToEvent('playerJoins', ({ playerJoins }, context) => {
     const uid = game.getPlayerUidFromEncId(playerJoins.encId)
@@ -56,7 +50,7 @@ game.subscribeToEvent('playerJoins', ({ playerJoins }, context) => {
 
         const coordinates = generateCoordinates(rooms, player)
         if(playerPosition) {
-            detectInOutOfRoom(coordinates, player, playerPosition, spreadService)
+            detectInOutOfRoom(coordinates, player, playerPosition)
         } 
     }
 })
@@ -90,7 +84,7 @@ game.subscribeToEvent('playerMoves', ({ playerMoves }, context) => {
         const coordinates = generateCoordinates(rooms,player)
 
         if(playerPosition) {
-            detectInOutOfRoom(coordinates, player, playerPosition, spreadService)
+            detectInOutOfRoom(coordinates, player, playerPosition)
         }   
         
     }
@@ -98,13 +92,11 @@ game.subscribeToEvent('playerMoves', ({ playerMoves }, context) => {
 
 
 
-//Gets events on X near object
+/**
+ * Xボタンの押下を検知して記録する
+ */
 game.subscribeToEvent("playerInteracts",({ playerInteracts }, context) => {
     const uid = game.getPlayerUidFromEncId(playerInteracts.encId)
-
-    // const player = uid ? game.players[uid] : {name: 'undefined'}
-
-    // writeIntoSpreadSheet(player.name, 'pressX', 'room1', false, spreadService);
 
     let player: Player;
     if(uid) {
@@ -115,7 +107,7 @@ game.subscribeToEvent("playerInteracts",({ playerInteracts }, context) => {
         const coordinates = generateCoordinates(rooms,player)
 
         if(playerPosition) {
-            detectInteract(coordinates, player, playerPosition, spreadService)
+            detectInteract(coordinates, player, playerPosition)
         }   
     }
 });
