@@ -170,8 +170,8 @@ const writeIntoCSV = async (name: string, map: string, room: string, isIn: boole
             Date(),
         ]])
     }
-    const fileName = `${room}.csv`
-    fs.appendFileSync(fileName, `${csv}\r\n`)
+    const fileName = `../csv/${room}.csv`
+    fs.appendFileSync(fileName, `\ufeff${csv}\r\n`)
 }
 
 
